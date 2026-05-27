@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OPXF — Open Product Exchange Format</title>
+  <meta name="description" content="The meta-standard for PIM-agnostic product data transit. Schema v0.1.0 beta." />
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --border: #2a2d3a;
+      --accent: #6366f1;
+      --accent-dim: rgba(99, 102, 241, .12);
+      --text: #e2e4ed;
+      --muted: #8b8fa8;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1.5rem;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 640px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      font-size: .72rem;
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--accent);
+      background: var(--accent-dim);
+      border: 1px solid rgba(99, 102, 241, .3);
+      border-radius: 99px;
+      padding: .25rem .75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .badge::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: .3
+      }
+    }
+
+    h1 {
+      font-size: clamp(1.8rem, 5vw, 2.6rem);
+      font-weight: 700;
+      letter-spacing: -.02em;
+      line-height: 1.15;
+      margin-bottom: .75rem;
+    }
+
+    .tagline {
+      font-size: 1.05rem;
+      color: var(--muted);
+      margin-bottom: 2rem;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 2rem 0;
+    }
+
+    .section-label {
+      font-size: .72rem;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: .75rem;
+    }
+
+    .schema-links {
+      display: flex;
+      flex-direction: column;
+      gap: .5rem;
+    }
+
+    .schema-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: .75rem 1rem;
+      text-decoration: none;
+      color: var(--text);
+      transition: border-color .15s, background .15s;
+    }
+
+    .schema-link:hover {
+      border-color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    .schema-link .name {
+      font-family: "SF Mono", "Fira Code", "Cascadia Code", Consolas, monospace;
+      font-size: .82rem;
+    }
+
+    .schema-link .meta {
+      font-size: .75rem;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .links {
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .links a,
+    footer a {
+      font-size: .875rem;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color .15s;
+    }
+
+    .links a:hover,
+    footer a:hover {
+      color: var(--text);
+    }
+
+    footer {
+      font-size: .78rem;
+      color: var(--muted);
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="badge">v0.1.0 &mdash; Beta</div>
+    <h1>Open Product Exchange Format</h1>
+    <p class="tagline">The meta-standard for PIM-agnostic data transit.</p>
+    <hr />
+    <p class="section-label">Schemas</p>
+    <div class="schema-links">
+      <a class="schema-link" href="https://opxf.org/schema/v0.1/opxf.model.schema.json">
+        <span class="name">opxf.model.schema.json</span>
+        <span class="meta">Model Schema — Structure and type definitions.</span>
+      </a>
+      <a class="schema-link" href="https://opxf.org/schema/v0.1/opxf.data.schema.json">
+        <span class="name">opxf.data.schema.json</span>
+        <span class="meta">Data Schema — Products, assets, objects, and categories.</span>
+      </a>
+    </div>
+    <hr />
+    <div class="links">
+      <a href="https://github.com/opxf/opxf-spec" target="_blank" rel="noopener">GitHub &rarr;</a>
+    </div>
+  </div>
+  <footer>
+    <p>OPXF v0.1.0 &mdash; beta &nbsp;&middot;&nbsp; <a href="https://github.com/opxf/opxf-spec/blob/main/LICENSE"
+        target="_blank" rel="noopener">MIT License</a></p>
+  </footer>
+</body>
+
+</html>

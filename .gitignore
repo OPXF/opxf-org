@@ -1,0 +1,24 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.suo
+*.user
+.vs/
+
+# Local env
+.env
+.env.local
+
+# AI / LLM
+.claude/
+.cursor/
+.copilot/
+.aider*
+.continue/
+.codeium/
+.gemini/
+.github/copilot-instructions.md
