@@ -1,0 +1,391 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opxf.org/schema/v0.2/opxf.data.schema.json",
+  "title": "OPXF Data",
+  "description": "The Product Payload for an OPXF exchange. Contains the actual values for products, variants, objects, and assets. Lean and transactional — references a companion model.opxf.json for structural validation.",
+  "type": "object",
+  "required": ["opxf", "data"],
+  "additionalProperties": false,
+  "properties": {
+
+    "$schema": {
+      "description": "Optional URL of the OPXF data schema this file conforms to, e.g. 'https://opxf.org/schema/v0.2/opxf.data.schema.json'. A convenience that lets editors and generic JSON tooling resolve and validate the file; opxf.version remains the binding version declaration and, when present, this should agree with it.",
+      "type": "string",
+      "format": "uri"
+    },
+
+    "opxf": {
+      "description": "OPXF format metadata.",
+      "type": "object",
+      "required": ["version", "modelId", "transferMode"],
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "description": "The OPXF specification version this file conforms to.",
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+$",
+          "examples": ["0.2"]
+        },
+        "modelId": {
+          "description": "The id of the model.opxf.json this payload conforms to. Must match model.id in the companion model file. Required for debugging and logging — consumers use this to locate the correct model when validating or transforming the payload.",
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]*$",
+          "examples": ["threadco-akeneo-prod"]
+        },
+        "transferMode": {
+          "description": "Required. Indicates whether this file contains the full current state of all records (snapshot) or only records that have changed since the previous export (incremental). Every payload must state its transfer mode explicitly — there is no inferred default.",
+          "type": "string",
+          "enum": ["snapshot", "incremental"],
+          "examples": ["snapshot"]
+        },
+        "createdAt": {
+          "description": "ISO 8601 timestamp of when this data file was first created.",
+          "type": "string",
+          "format": "date-time",
+          "examples": ["2026-05-14T08:00:00Z"]
+        },
+        "updatedAt": {
+          "description": "ISO 8601 timestamp of when this data file was last modified.",
+          "type": "string",
+          "format": "date-time",
+          "examples": ["2026-05-14T14:00:00Z"]
+        },
+        "generatedBy": {
+          "description": "Identifier of the tool or connector that produced this file.",
+          "type": "string",
+          "examples": ["threadco-akeneo-connector/2.1.0", "manual"]
+        }
+      }
+    },
+
+    "data": {
+      "description": "The full product payload.",
+      "type": "object",
+      "required": ["products"],
+      "additionalProperties": false,
+      "properties": {
+
+        "products": {
+          "description": "The product entries. Each product may have zero or more variants. A product without variants is a standalone product.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/product" }
+        },
+
+        "categories": {
+          "description": "Category trees. Each entry declares its categoryTreeId and label, optionally a categoryTypeId, and contains a nodes array of root-level categoryNode entries. The full hierarchy is expressed by nesting nodes within nodes to any depth. This is the authoritative source for tree structure — the model carries only categoryTypes and channel assignments.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/categoryGroup" }
+        },
+
+        "objects": {
+          "description": "Supporting entity entries grouped by object type (brands, suppliers, certifications, etc.). Each group declares its objectTypeId and contains an items array of entries. Fully embedded — no external references. Referenced by products, variants, and other objects via object-link and object-link-list attribute values.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/objectGroup" }
+        },
+
+        "assets": {
+          "description": "Asset entries grouped by asset type. Each group declares its assetTypeId and contains an items array of asset entries. Each asset has a required URL and optional type-specific metadata attributes. Referenced by products, variants, and objects via asset-link and asset-link-list attribute values.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/assetGroup" }
+        },
+
+        "metadata": { "$ref": "#/$defs/metadata" }
+
+      }
+    }
+  },
+
+  "$defs": {
+
+    "localizedLabel": {
+      "description": "A human-readable label in one or more locales. Keys are BCP 47 locale codes.",
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "patternProperties": {
+        "^[a-z]{2,3}(-[A-Z]{2})?$": { "type": "string" }
+      },
+      "examples": [{ "en-GB": "Clothing", "de-DE": "Kleidung" }]
+    },
+
+    "lifecycle": {
+      "description": "The lifecycle state of an entity. draft = not yet published; active = live and current; archived = retired but retained for reference; deleted = a tombstone instructing consumers to remove the entity downstream. A deleted entity is still carried in the payload so that references to it resolve; consumers treat it as removed. References to a deleted entity are valid and MUST NOT be flagged as broken.",
+      "type": "string",
+      "enum": ["draft", "active", "archived", "deleted"],
+      "examples": ["active"]
+    },
+
+    "metadata": {
+      "description": "Arbitrary key-value pairs for connector-specific or consumer-specific hints that have no place in the core schema. Keys are strings; values may be any JSON type (string, number, boolean, array, or object).",
+      "type": "object",
+      "additionalProperties": true,
+      "examples": [
+        {
+          "source_id": "f3a2b1d4-9c8e-4f1a-b2c3",
+          "status": "approved",
+          "allowed_markets": ["EU", "US"],
+          "checksum": "sha256:a3f1c2..."
+        }
+      ]
+    },
+
+    "attributeValue": {
+      "description": "The value object for a single attribute entry in a keyed attribute map. 'value' carries the attribute's data. For non-localizable attributes the value is a plain primitive, array, or object depending on the attribute type. For localizable attributes (localizable: true in the model) the value is a BCP 47 locale-keyed object — e.g. { \"en-GB\": \"Classic T-Shirt\", \"de-DE\": \"Klassisches T-Shirt\" }. The model's localizable flag is the parsing discriminant; no second field is needed.",
+      "type": "object",
+      "required": ["value"],
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "description": "The attribute value. Shape depends on the attribute type in the model: string for text/textarea/select/datetime; number for number; boolean for boolean; array of strings for text-list/select-list; a reference id string for object-link/asset-link/product-link, or an array of id strings for their -list variants. For localizable attributes (localizable: true) the value is a locale-keyed object with BCP 47 keys. For type 'json' the value may be any valid JSON value with no further enforcement."
+        },
+        "metadata": { "$ref": "#/$defs/metadata" }
+      }
+    },
+
+    "attributeMap": {
+      "description": "A keyed map of attribute values. Keys are attribute ids; values are attributeValue objects. Key order in the data file is not significant — canonical attribute order is defined by the attribute definition array in the model.",
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/attributeValue" }
+    },
+
+    "product": {
+      "description": "A product entry. May be a standalone product or the parent of one or more variants. Attribute keys must only include ids listed in the product's productType.productAttributes.",
+      "type": "object",
+      "required": ["id", "productTypeId", "lifecycle"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "description": "Unique identifier for this product within the payload.",
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]*$"
+        },
+        "lifecycle": { "$ref": "#/$defs/lifecycle" },
+        "productTypeId": {
+          "description": "References a productType id in the model. Determines which attributes are valid at the product and variant level.",
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]*$"
+        },
+        "categories": {
+          "description": "Category node ids this product belongs to. Each id must reference a node defined in data.categories (searched recursively). Used to resolve channel membership.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string" }
+        },
+        "createdAt": {
+          "description": "ISO 8601 timestamp of when this product record was first created in the source system.",
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "description": "ISO 8601 timestamp of when this product record was last modified in the source system.",
+          "type": "string",
+          "format": "date-time"
+        },
+        "metadata": { "$ref": "#/$defs/metadata" },
+        "attributes": { "$ref": "#/$defs/attributeMap" },
+        "variants": {
+          "description": "Variant entries for this product. Each variant carries its own attribute values scoped to productType.variantAttributes.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/variant" }
+        }
+      }
+    },
+
+    "variant": {
+      "description": "A variant of a product. Inherits product-level attributes from its parent; carries its own values for attributes in productType.variantAttributes.",
+      "type": "object",
+      "required": ["id", "lifecycle"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "description": "Unique identifier for this variant within the payload.",
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]*$"
+        },
+        "lifecycle": { "$ref": "#/$defs/lifecycle" },
+        "createdAt": {
+          "description": "ISO 8601 timestamp of when this variant record was first created in the source system.",
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "description": "ISO 8601 timestamp of when this variant record was last modified in the source system.",
+          "type": "string",
+          "format": "date-time"
+        },
+        "metadata": { "$ref": "#/$defs/metadata" },
+        "attributes": { "$ref": "#/$defs/attributeMap" }
+      }
+    },
+
+    "categoryGroup": {
+      "description": "A complete category tree. Declares the tree's id, label, optional categoryTypeId (references a categoryType in the model), and contains a nodes array of root-level categoryNode entries. The full hierarchy is expressed by nesting nodes within nodes to any depth.",
+      "type": "object",
+      "required": ["categoryTreeId", "label", "nodes"],
+      "additionalProperties": false,
+      "properties": {
+        "categoryTreeId": {
+          "description": "Unique identifier for this category tree. Referenced by model.channels[].categoryTreeIds.",
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]*$"
+        },
+        "label": { "$ref": "#/$defs/localizedLabel" },
+        "categoryTypeId": {
+          "description": "Optional reference to a categoryType id in model.categoryTypes. When present, nodes in this tree may carry attribute values conforming to that type's attributeDefinitions. When absent, nodes carry no attributes beyond id and label.",
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]*$"
+        },
+        "metadata": { "$ref": "#/$defs/metadata" },
+        "nodes": {
+          "description": "Root-level nodes of this tree. Array order is significant — producers should emit nodes in intended navigation order; downstream renderers use this sequence to display the tree.",
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/categoryNode" }
+        }
+      }
+    },
+
+    "categoryNode": {
+      "description": "A single node in a category tree. May contain child nodes to any depth. Optionally carries attribute values conforming to the tree's assigned categoryType.",
+      "type": "object",
+      "required": ["id", "label"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "description": "Unique identifier for this node within the tree. Referenced by product.categories.",
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]*$"
+        },
+        "label": { "$ref": "#/$defs/localizedLabel" },
+        "metadata": { "$ref": "#/$defs/metadata" },
+        "attributes": { "$ref": "#/$defs/attributeMap" },
+        "nodes": {
+          "description": "Child nodes of this category node. May be nested to any depth. Array order is significant — producers should emit nodes in intended navigation order.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/categoryNode" }
+        }
+      }
+    },
+
+    "objectGroup": {
+      "description": "A group of object entries sharing the same objectTypeId. Groups objects by type for readability and scoped uniqueness — object ids must be unique within their group, not across all objects. Mirrors how objectTypes are declared in the model.",
+      "type": "object",
+      "required": ["objectTypeId", "items"],
+      "additionalProperties": false,
+      "properties": {
+        "objectTypeId": {
+          "description": "References an objectType id in the model. All entries in this group conform to that type's attribute definitions.",
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]*$"
+        },
+        "metadata": { "$ref": "#/$defs/metadata" },
+        "items": {
+          "description": "The object entries belonging to this type group.",
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/object" }
+        }
+      }
+    },
+
+    "object": {
+      "description": "A supporting entity entry (brand, supplier, certification, etc.). Fully self-contained. The objectTypeId is declared on the enclosing group, not on each entry. Referenced by products, variants, and other objects via object-link attribute values using this entry's id.",
+      "type": "object",
+      "required": ["id", "lifecycle"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "description": "Identifier for this object, unique within its objectTypeId group.",
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]*$"
+        },
+        "lifecycle": { "$ref": "#/$defs/lifecycle" },
+        "createdAt": {
+          "description": "ISO 8601 timestamp of when this object record was first created in the source system.",
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "description": "ISO 8601 timestamp of when this object record was last modified in the source system.",
+          "type": "string",
+          "format": "date-time"
+        },
+        "metadata": { "$ref": "#/$defs/metadata" },
+        "attributes": { "$ref": "#/$defs/attributeMap" }
+      }
+    },
+
+    "assetGroup": {
+      "description": "A group of asset entries sharing the same assetTypeId. Groups assets by type for readability and scoped uniqueness — asset ids must be unique within their group, not across all assets. Mirrors how assetTypes are declared in the model.",
+      "type": "object",
+      "required": ["assetTypeId", "items"],
+      "additionalProperties": false,
+      "properties": {
+        "assetTypeId": {
+          "description": "References an assetType id in the model. All entries in this group conform to that type's attribute definitions.",
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]*$"
+        },
+        "metadata": { "$ref": "#/$defs/metadata" },
+        "items": {
+          "description": "The asset entries belonging to this type group.",
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/asset" }
+        }
+      }
+    },
+
+    "asset": {
+      "description": "A digital asset entry. The filename and mimeType fields are required and structural — they are not declarable attributes. The url is optional: a public, fully-qualified URL when one is available, otherwise omitted (the asset is still emitted for its identity, metadata, and attributes). The assetTypeId is declared on the enclosing group, not on each entry. Additional metadata (alt text, role, etc.) is carried as attribute values. When a url is present, urlUpdatedAt is required for cache-busting / change detection.",
+      "type": "object",
+      "required": ["id", "filename", "mimeType", "lifecycle"],
+      "additionalProperties": false,
+      "if": {
+        "required": ["url"]
+      },
+      "then": {
+        "required": ["urlUpdatedAt"]
+      },
+      "properties": {
+        "id": {
+          "description": "Identifier for this asset, unique within its assetTypeId group.",
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]*$"
+        },
+        "lifecycle": { "$ref": "#/$defs/lifecycle" },
+        "url": {
+          "description": "The fully-qualified URL to the asset file.",
+          "type": "string",
+          "format": "uri"
+        },
+        "urlUpdatedAt": {
+          "description": "ISO 8601 timestamp of when the asset's url (or the file it points to) last changed. Used by consumers for cache-busting and change detection without re-fetching the file. Required whenever url is present.",
+          "type": "string",
+          "format": "date-time"
+        },
+        "filename": {
+          "description": "The original filename of the asset including extension, e.g. 'white-front.jpg'.",
+          "type": "string"
+        },
+        "mimeType": {
+          "description": "The MIME type of the asset file, e.g. 'image/jpeg', 'image/png', 'image/svg+xml', 'application/pdf'.",
+          "type": "string"
+        },
+        "createdAt": {
+          "description": "ISO 8601 timestamp of when this asset record was first created in the source system.",
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "description": "ISO 8601 timestamp of when this asset record was last modified in the source system.",
+          "type": "string",
+          "format": "date-time"
+        },
+        "metadata": { "$ref": "#/$defs/metadata" },
+        "attributes": { "$ref": "#/$defs/attributeMap" }
+      }
+    }
+
+  }
+}

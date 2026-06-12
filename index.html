@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>OPXF — Open Product Exchange Format</title>
-  <meta name="description" content="The meta-standard for PIM-agnostic product data transit. Schema v0.1.0 beta." />
+  <meta name="description" content="The meta-standard for PIM-agnostic product data transit. Schema v0.2 beta." />
   <style>
     *,
     *::before,
@@ -147,44 +147,36 @@
 
     .links {
       display: flex;
-      gap: 1.5rem;
-      flex-wrap: wrap;
+      flex-direction: column;
+      gap: .5rem;
     }
 
-    .links a,
-    footer a {
+    .links a {
       font-size: .875rem;
       color: var(--muted);
       text-decoration: none;
       transition: color .15s;
     }
 
-    .links a:hover,
-    footer a:hover {
+    .links a:hover {
       color: var(--text);
-    }
-
-    footer {
-      font-size: .78rem;
-      color: var(--muted);
-      text-align: center;
     }
   </style>
 </head>
 
 <body>
   <div class="container">
-    <div class="badge">v0.1.0 &mdash; Beta</div>
+    <div class="badge">v0.2 &mdash; BETA</div>
     <h1>Open Product Exchange Format</h1>
     <p class="tagline">The meta-standard for PIM-agnostic data transit.</p>
     <hr />
     <p class="section-label">Schemas</p>
     <div class="schema-links">
-      <a class="schema-link" href="https://opxf.org/schema/v0.1/opxf.model.schema.json">
+      <a class="schema-link" href="https://opxf.org/schema/v0.2/opxf.model.schema.json">
         <span class="name">opxf.model.schema.json</span>
         <span class="meta">Model Schema — Structure and type definitions.</span>
       </a>
-      <a class="schema-link" href="https://opxf.org/schema/v0.1/opxf.data.schema.json">
+      <a class="schema-link" href="https://opxf.org/schema/v0.2/opxf.data.schema.json">
         <span class="name">opxf.data.schema.json</span>
         <span class="meta">Data Schema — Products, assets, objects, and categories.</span>
       </a>
@@ -192,12 +184,9 @@
     <hr />
     <div class="links">
       <a href="https://github.com/opxf/opxf-spec" target="_blank" rel="noopener">GitHub &rarr;</a>
+      <a href="https://github.com/opxf/opxf-spec/blob/main/LICENSE" target="_blank" rel="noopener">MIT License &rarr;</a>
     </div>
   </div>
-  <footer>
-    <p>OPXF v0.1.0 &mdash; beta &nbsp;&middot;&nbsp; <a href="https://github.com/opxf/opxf-spec/blob/main/LICENSE"
-        target="_blank" rel="noopener">MIT License</a></p>
-  </footer>
 </body>
 
 </html>
