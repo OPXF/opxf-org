@@ -1,0 +1,602 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opxf.org/schema/v0.3/opxf.model.schema.json",
+  "title": "OPXF Model",
+  "description": "The Definition Manifest for an OPXF exchange. Declares the complete structural contract for a company's product data model — attribute types, localization rules, value lists, object and asset types, product types, and category taxonomies. Consumed by downstream systems to interpret and validate a companion data.opxf.json payload.",
+  "type": "object",
+  "required": [
+    "opxf",
+    "model"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "description": "Optional URL of the OPXF model schema this file conforms to, e.g. 'https://opxf.org/schema/v0.3/opxf.model.schema.json'. A convenience that lets editors and generic JSON tooling resolve and validate the file; opxf.version remains the binding version declaration and, when present, this should agree with it.",
+      "type": "string",
+      "format": "uri"
+    },
+    "opxf": {
+      "description": "OPXF format metadata.",
+      "type": "object",
+      "required": [
+        "version"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "description": "The OPXF specification version this file conforms to.",
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+$",
+          "examples": [
+            "0.3"
+          ]
+        },
+        "createdAt": {
+          "description": "ISO 8601 timestamp of when this model file was first created.",
+          "type": "string",
+          "format": "date-time",
+          "examples": [
+            "2025-06-01T09:00:00Z"
+          ]
+        },
+        "updatedAt": {
+          "description": "ISO 8601 timestamp of when this model file was last modified.",
+          "type": "string",
+          "format": "date-time",
+          "examples": [
+            "2026-01-15T14:32:00Z"
+          ]
+        },
+        "generatedBy": {
+          "description": "Identifier of the tool or connector that produced this file, e.g. 'threadco-akeneo-connector/2.1.0'. Useful for debugging and audit trails.",
+          "type": "string",
+          "examples": [
+            "threadco-akeneo-connector/2.1.0",
+            "manual"
+          ]
+        }
+      }
+    },
+    "model": {
+      "description": "The full model definition for this company's product data.",
+      "type": "object",
+      "required": [
+        "id",
+        "locales",
+        "productAttributeDefinitions"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "description": "Unique identifier for this model. Recommended convention: {company}-{source-system}-{environment}, e.g. 'threadco-akeneo-prod' or 'threadco-inriver-staging'. Used to associate data.opxf.json files with their model.",
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]*$",
+          "examples": [
+            "threadco-akeneo-prod",
+            "acme-inriver-staging"
+          ]
+        },
+        "name": {
+          "description": "Operational name for this model. Not intended for display in consumer frontends.",
+          "type": "string",
+          "examples": [
+            "ThreadCo Apparel — Akeneo Production"
+          ]
+        },
+        "locales": {
+          "description": "All locales supported by this model. BCP 47 format (e.g. en-GB, fr-FR). Kept at model root for easy reference — locales are also assigned to channels. A locale here without a channel assignment is valid and applies globally.",
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z]{2,3}(-[A-Z]{2})?$"
+          },
+          "examples": [
+            [
+              "en-GB",
+              "de-DE",
+              "fr-FR"
+            ]
+          ]
+        },
+        "defaultLocale": {
+          "description": "The primary locale. Must be present in the locales array.",
+          "type": "string",
+          "pattern": "^[a-z]{2,3}(-[A-Z]{2})?$",
+          "examples": [
+            "en-GB"
+          ]
+        },
+        "channels": {
+          "description": "Named output channels (e.g. ecommerce, print, wholesale). Each channel declares which locales and category trees are relevant to it. Channel membership for a product is resolved by traversal: product.categories → categoryNode → categoryTree → channel. Category trees and their nodes are defined in data.categories; channels reference them by id. Array order is significant — producers should emit channels in intended display order.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/channel"
+          }
+        },
+        "markets": {
+          "description": "Named commercial territories used for per-market visibility scoping. A market is a named bag of locales — its granularity is the producer's choice: a single country (e.g. 'sweden' → ['sv-SE']), a multi-locale region (e.g. 'apac' → ['ja-JP','ko-KR','en-AU']), or anything between. Two markets may share a locale and still be distinct; this is what lets visibility differ between markets that use the same language (e.g. a US market that shows a Prop 65 attribute vs a global market on en-US that does not). Referenced by id from activeForMarkets on attribute definitions, value-list options, products, variants, objects, and assets. Producers that think purely in locales emit one market per locale and lose nothing. Array order is significant — producers should emit markets in intended display order.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/market"
+          }
+        },
+        "productAttributeDefinitions": {
+          "description": "Attribute definitions that apply to products and variants. Ids must be unique within this array — product attributes form a single global pool shared across all product types, mirroring how most PIM systems define product attributes. Referenced by productType.productAttributes and productType.variantAttributes. Array order is significant — producers should emit definitions in intended display order; downstream renderers may use this order when no explicit UI grouping applies.",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/attributeDefinition"
+          }
+        },
+        "productAttributeGroups": {
+          "description": "Named groups for organising product attributes into labelled sections in downstream UIs and renderers. Groups are presentation-only — they carry no data semantics. Ids must be unique within this array. Product attributes reference a group via groupId in their definition. Array order is significant — producers should emit groups in intended display order.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/attributeGroup"
+          }
+        },
+        "productTypes": {
+          "description": "Product type templates. Each declares which attributes belong to the product level and which belong to the variant level. Variants are nested directly under their parent product in data.opxf.json. Array order is significant — producers should emit types in intended display order.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/productType"
+          }
+        },
+        "objectTypes": {
+          "description": "Types of non-product objects that products may reference via object-link or object-link-list attributes. Known as reference entities (Akeneo), entities (Inriver), global lists (Struct), or data objects (Pimcore). Array order is significant — producers should emit types in intended display order.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/objectType"
+          }
+        },
+        "assetTypes": {
+          "description": "Types of digital assets that products may reference via asset-link or asset-link-list attributes. Each asset type declares its own attribute definitions, enabling rich asset metadata (alt text, role, focal point, etc.). Mirrors how objectTypes work. Array order is significant — producers should emit types in intended display order.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/assetType"
+          }
+        },
+        "categoryTypes": {
+          "description": "Category type definitions. Each declares the attribute definitions available on nodes within a category tree of that type — e.g. SEO fields for an ecommerce tree, layout fields for a print tree. A categoryType is assigned to a tree in data.categories via categoryTree.categoryTypeId. Ids must be unique within this array. Array order is significant — producers should emit types in intended display order.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/categoryType"
+          }
+        },
+        "metadata": {
+          "$ref": "#/$defs/metadata"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "metadata": {
+      "description": "Arbitrary key-value pairs for connector-specific or consumer-specific hints that have no place in the core schema. Keys are strings; values may be any JSON type (string, number, boolean, array, or object).",
+      "type": "object",
+      "additionalProperties": true,
+      "examples": [
+        {
+          "facet": true,
+          "facet_position": 1,
+          "display_group": "dimensions",
+          "market": "EU",
+          "allowed_markets": [
+            "EU",
+            "US"
+          ],
+          "range_config": {
+            "min": 0,
+            "max": 500
+          }
+        }
+      ]
+    },
+    "attributeGroup": {
+      "description": "A named group for organising attributes into labelled sections. Presentation-only — carries no data semantics.",
+      "type": "object",
+      "required": [
+        "id",
+        "label"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]*$",
+          "description": "Unique identifier for this attribute group."
+        },
+        "label": {
+          "$ref": "#/$defs/localizedLabel"
+        },
+        "metadata": {
+          "$ref": "#/$defs/metadata"
+        }
+      }
+    },
+    "localizedLabel": {
+      "description": "A human-readable label in one or more locales. Keys are BCP 47 locale codes.",
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "patternProperties": {
+        "^[a-z]{2,3}(-[A-Z]{2})?$": {
+          "type": "string"
+        }
+      },
+      "examples": [
+        {
+          "en-GB": "Colour",
+          "de-DE": "Farbe"
+        }
+      ]
+    },
+    "channel": {
+      "description": "A named output channel. Declares which locales and category trees are relevant for this channel. Products are not tagged with a channel directly — channel membership is resolved by traversing: product.categories → categoryNode → categoryTree → channel.",
+      "type": "object",
+      "required": [
+        "id",
+        "label"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]*$",
+          "description": "Unique identifier for this channel."
+        },
+        "label": {
+          "$ref": "#/$defs/localizedLabel"
+        },
+        "locales": {
+          "description": "Locale codes active for this channel. Must be a subset of model.locales.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z]{2,3}(-[A-Z]{2})?$"
+          }
+        },
+        "categoryTreeIds": {
+          "description": "Ids of category trees that belong to this channel. Must reference categoryTreeIds defined in data.categories.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "metadata": {
+          "$ref": "#/$defs/metadata"
+        }
+      }
+    },
+    "market": {
+      "description": "A named commercial territory used for per-market visibility scoping. Defined as a bag of locales; granularity (single country vs multi-locale region) is the producer's choice. Same shape as a channel minus category trees, but a distinct concept: a channel is an output surface (resolved via category traversal), a market is a territory (referenced explicitly by id from activeForMarkets). Two markets may carry overlapping or identical locale sets and remain distinct.",
+      "type": "object",
+      "required": [
+        "id",
+        "label"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]*$",
+          "description": "Unique identifier for this market."
+        },
+        "label": {
+          "$ref": "#/$defs/localizedLabel"
+        },
+        "locales": {
+          "description": "Locale codes this market covers. Must be a subset of model.locales. A locale may appear in more than one market.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z]{2,3}(-[A-Z]{2})?$"
+          }
+        },
+        "metadata": {
+          "$ref": "#/$defs/metadata"
+        }
+      }
+    },
+    "attributeDefinition": {
+      "description": "Defines a single attribute: its type and localizability. Data quality and validation rules are owned by the source PIM, not by this schema.",
+      "type": "object",
+      "required": [
+        "id",
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "description": "Unique attribute code within its definition array (productAttributeDefinitions, objectType.attributeDefinitions, assetType.attributeDefinitions, or categoryType.attributeDefinitions). Case is preserved as-is from the source PIM.",
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]*$"
+        },
+        "type": {
+          "description": "The OPXF canonical attribute type. 'text-list' is the only primitive with a -list variant — number, boolean, datetime, textarea, and json do not have list variants (use json for structured lists of those). 'object-link' references objects in objectTypes. 'asset-link' references assets in assetTypes. 'product-link' references other products or variants by id. 'json' is an escape hatch for opaque or structured data.",
+          "type": "string",
+          "enum": [
+            "text",
+            "text-list",
+            "textarea",
+            "number",
+            "boolean",
+            "datetime",
+            "select",
+            "select-list",
+            "asset-link",
+            "asset-link-list",
+            "object-link",
+            "object-link-list",
+            "product-link",
+            "product-link-list",
+            "json"
+          ]
+        },
+        "label": {
+          "$ref": "#/$defs/localizedLabel"
+        },
+        "description": {
+          "$ref": "#/$defs/localizedLabel"
+        },
+        "localizable": {
+          "description": "Whether this attribute carries different values per locale. Default: false.",
+          "type": "boolean",
+          "default": false
+        },
+        "unit": {
+          "description": "Optional unit of measure. Localizable so the symbol or abbreviation can be rendered in the appropriate script per locale (e.g. 'kg' in en-US, '公斤' in zh-CN — both refer to the same unit, another example is meters with 'm' in en-US, 'м' in bg-BG and '米' in zh-CN).",
+          "$ref": "#/$defs/localizedLabel"
+        },
+        "selectValues": {
+          "description": "Required for select and select-list: the allowed select values for this attribute. Owned exclusively by this attribute — not shared. Array order is significant — producers should emit selectValues in intended display order; downstream UIs render selectValues in this sequence.",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/valueListOption"
+          }
+        },
+        "objectTypeId": {
+          "description": "Required for object-link and object-link-list: the id of the ObjectType this attribute links to.",
+          "type": "string"
+        },
+        "assetTypeId": {
+          "description": "Required for asset-link and asset-link-list: the id of the AssetType this attribute references.",
+          "type": "string"
+        },
+        "groupId": {
+          "description": "Optional reference to an attributeGroup id. For product attributes, references model.productAttributeGroups. For object attributes, references the enclosing objectType.attributeGroups. For asset attributes, references the enclosing assetType.attributeGroups. Used by downstream systems to render attributes in labelled sections.",
+          "type": "string"
+        },
+        "activeForMarkets": {
+          "description": "Optional per-market visibility gate. Lists the ids of markets (model.markets) this attribute is part of the contract for. Absent or empty means active for all markets. When present, must reference defined markets and may only narrow visibility, never widen it. Visibility resolves per market and is then projected to locales — a locale shared by two markets may be active in one and not the other. See conformance Section 12 (CONF-55..58).",
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "metadata": {
+          "$ref": "#/$defs/metadata"
+        }
+      },
+      "allOf": [
+        {
+          "$comment": "Companion field requirements — each reference type requires a matching id field pointing to its definition in the model.",
+          "if": {
+            "properties": {
+              "type": {
+                "enum": [
+                  "object-link",
+                  "object-link-list"
+                ]
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "required": [
+              "objectTypeId"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "enum": [
+                  "asset-link",
+                  "asset-link-list"
+                ]
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "required": [
+              "assetTypeId"
+            ]
+          }
+        }
+      ]
+    },
+    "valueListOption": {
+      "description": "A single selectable option within a ValueList.",
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]*$",
+          "description": "Unique option code within this value list."
+        },
+        "label": {
+          "$ref": "#/$defs/localizedLabel"
+        },
+        "activeForMarkets": {
+          "description": "Optional per-market visibility gate for this individual option. Lists the ids of markets (model.markets) this option is available in. Absent or empty means active for all markets. Only evaluated where the owning attribute is itself active for the market — option-level scoping narrows further within an already-shown attribute. See conformance Section 12 (CONF-55..58).",
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "metadata": {
+          "$ref": "#/$defs/metadata"
+        }
+      }
+    },
+    "productType": {
+      "description": "Declares which attributes apply at the product level and which apply at the variant level. productAttributes and variantAttributes are strictly enforced: a product in data.json may only carry attributes listed in productAttributes; a variant may only carry attributes listed in variantAttributes. All ids must exist in productAttributeDefinitions.",
+      "type": "object",
+      "required": [
+        "id",
+        "productAttributes"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]*$",
+          "description": "Unique identifier for this product type."
+        },
+        "label": {
+          "$ref": "#/$defs/localizedLabel"
+        },
+        "metadata": {
+          "$ref": "#/$defs/metadata"
+        },
+        "productAttributes": {
+          "description": "Attribute ids that apply at the product level, shared across all variants.",
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "variantAttributes": {
+          "description": "Attribute ids that are set per variant. A variant may only carry attributes from this list. Omit entirely for product types that have no variants.",
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "objectType": {
+      "description": "A type of non-product object that products may reference. Known as reference entities (Akeneo), entities (Inriver), global lists (Struct), or data objects (Pimcore). Each object type owns its attribute definitions — ids are unique within the type and do not need to be globally unique across all object types.",
+      "type": "object",
+      "required": [
+        "id",
+        "attributeDefinitions"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]*$",
+          "description": "Unique identifier for this object type."
+        },
+        "label": {
+          "$ref": "#/$defs/localizedLabel"
+        },
+        "metadata": {
+          "$ref": "#/$defs/metadata"
+        },
+        "attributeGroups": {
+          "description": "Named groups for organising this object type's attributes into labelled sections. Presentation-only — carries no data semantics. Ids must be unique within this array. Attributes reference a group via groupId in their definition. Array order is significant.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/attributeGroup"
+          }
+        },
+        "attributeDefinitions": {
+          "description": "Attribute definitions that apply to objects of this type. Ids must be unique within this array. Two different object types may use the same attribute id independently. May be empty — an object type with no attributes is valid; the entry's id alone is sufficient identity.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/attributeDefinition"
+          }
+        }
+      }
+    },
+    "assetType": {
+      "description": "A type of digital asset that products may reference via asset-link or asset-link-list attributes. Each asset type owns its attribute definitions — ids are unique within the type and do not need to be globally unique across all asset types.",
+      "type": "object",
+      "required": [
+        "id",
+        "attributeDefinitions"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]*$",
+          "description": "Unique identifier for this asset type."
+        },
+        "label": {
+          "$ref": "#/$defs/localizedLabel"
+        },
+        "metadata": {
+          "$ref": "#/$defs/metadata"
+        },
+        "attributeGroups": {
+          "description": "Named groups for organising this asset type's attributes into labelled sections. Presentation-only — carries no data semantics. Ids must be unique within this array. Attributes reference a group via groupId in their definition. Array order is significant.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/attributeGroup"
+          }
+        },
+        "attributeDefinitions": {
+          "description": "Attribute definitions that apply to assets of this type. Ids must be unique within this array. Two different asset types may use the same attribute id independently. May be empty — an asset type with no attributes is valid; the url and id on each asset entry are sufficient.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/attributeDefinition"
+          }
+        }
+      }
+    },
+    "categoryType": {
+      "description": "Declares the attribute definitions available on nodes within a category tree of this type. Mirrors how objectType and assetType own their attribute definitions. A categoryType may be shared across multiple trees — e.g. both an ecommerce tree and a wholesale tree can reference the same categoryTypeId if they use the same node attributes. Ids must be unique within model.categoryTypes.",
+      "type": "object",
+      "required": [
+        "id",
+        "attributeDefinitions"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]*$",
+          "description": "Unique identifier for this category type."
+        },
+        "label": {
+          "$ref": "#/$defs/localizedLabel"
+        },
+        "metadata": {
+          "$ref": "#/$defs/metadata"
+        },
+        "attributeDefinitions": {
+          "description": "Attribute definitions available on nodes of this category type. Ids must be unique within this array. Two different category types may use the same attribute id independently. May be empty — a category type with no attributes is valid for trees that only carry id and label on nodes.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/attributeDefinition"
+          }
+        }
+      }
+    }
+  }
+}
